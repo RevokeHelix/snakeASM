@@ -65,13 +65,13 @@ proc apple
     add dx,dx    ; multiply the remainder by two
     mov di, dx   ;place apple in the random position
     push ax
-    mov ah, 150                                         ;making the dot's background red and flickering
-    mov al, 'u'
+    mov ah, 150 ; make blue and flickering
+    mov al, 'u' ; make apple u letter
     mov [es:di],ax
-    mov [applepos],di
+    mov [applepos],di ; move the position of the apple to memory
     pop ax
 
-    push [bp+4]
+    push [bp+4] ; call applespawn function to check if apple is inside snake
     call applespawn
     pop dx
 
@@ -89,12 +89,12 @@ proc collision
     push ax
     push bx
     push si
-    mov ax,[applepos]
-    mov si,[bp+4]
+    mov ax,[applepos] ; move ax to the position of the apple
+    mov si,[bp+4] ; move si offset of tail
+    add si,[snakeLength] 
     add si,[snakeLength]
-    add si,[snakeLength]
-    sub si,2
-    mov bx,[si]
+    sub si,2 ; move si the offset of head
+    mov bx,[si] ; move bx head position
 
     cmp ax,bx ; check if apple position == head position 
     jne exit3
@@ -175,7 +175,7 @@ proc clear
     ;; clear the screen using a loop that incs di and clears [ES:DI]
     mov ax, 0
     xor di, di
-    mov cx, SCREENW*SCREENH
+    mov cx, SCREENW*SCREENH ; loop for screen width x screen height times
     rep stosw               ; mov [ES:DI], AX & inc di
     pop bp
     ret
@@ -193,9 +193,9 @@ proc drawbody
     mov bx,[bp+4] ; move bx offset snake
     add bx,[snakeLength]
     add bx,[snakeLength]
-    sub bx,2
-    mov di,[bx]
-    stosw
+    sub bx,2 ; move bx offset head
+    mov di,[bx] ; move di head position
+    stosw ; place apostrophe
     pop di
     pop bx
     pop ax
@@ -211,8 +211,8 @@ proc deletesnake
     push ax
     push bx
     push di
-    cmp [lengthen],1
-    je exit5
+    cmp [lengthen],1 ; check if need to lengthn
+    je exit5 ; if true dont delete last
     mov cx, [snakeLength] ; number of times to loop
     xor ax,ax ; snake design
     mov bx,[bp+4] ; move bx offset snake
@@ -604,6 +604,7 @@ main:
     jmp main ; infinte loop
 
 up:
+    ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],1
     push offset snake
     call deletesnake
@@ -613,6 +614,7 @@ up:
     pop dx
     jmp main
 down:
+    ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],2
     push offset snake
     call deletesnake
@@ -622,6 +624,7 @@ down:
     pop dx
     jmp main
 left:
+    ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],3
     push offset snake
     call deletesnake
@@ -631,6 +634,7 @@ left:
     pop dx
     jmp main
 right:
+    ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],4
     push offset snake
     call deletesnake
@@ -639,7 +643,7 @@ right:
     call drawbody
     pop dx
     jmp main
-exit:
+exit: ; exit the function
     mov ax, 4c00h
     int 21h
 END start
