@@ -31,7 +31,7 @@ proc getinput
     mov bp,sp
     push ax
     push di
-    mov di,offset key
+    mov di,[bp+4]
     xor ax,ax
     mov ah,01 ; check if there is a keystroke
     int 16h
@@ -60,7 +60,7 @@ proc apple
     push si
 
     push di
-    mov di,offset insidesnake
+    mov di,[bp+10] ; move di offset insidesnake
     mov [BYTE PTR di],0
     pop di
 
@@ -77,7 +77,7 @@ proc apple
     mov al, 'u' ; make apple u letter
     mov [es:di],ax
     push si
-    mov si,offset applepos
+    mov si,[bp+6] ;move offset applepos
     mov [si],di ; move the position of the apple to memory
     pop si
     pop ax
@@ -102,10 +102,10 @@ proc collision
     push bx
     push si
     push di
-    mov di, [bp+6]
-    mov ax,[applepos] ; move ax to the position of the apple
+    mov di,[bp+6] ; move di to the offset of the position of the apple
+    mov ax,[di] ; mov ax applepos
     mov si,[bp+4] ; move si offset of tail
-    mov di,offset snakeLength
+    mov di,[bp+8] ; move di offset of snakelength
     add si,[di] 
     add si,[di]
     sub si,2 ; move si the offset of head
@@ -113,7 +113,15 @@ proc collision
 
     cmp ax,bx ; check if apple position == head position 
     jne exit3
+    push [bp+6] ; push offset applepos
+    push [bp+10] ; push offset inside snake
+    push [bp+8] ; push offset snakelength
+    push [bp+4] ; push offset snake
     call appleeaten ; if equal call appleeaten function
+    pop di
+    pop di
+    pop di
+    pop di
     exit3:
         pop di
         pop si
@@ -132,8 +140,8 @@ proc appleeaten
     push di
     push cx
     push si
-    mov bx,offset snake ; move bx offset tail
-    mov si,offset snakeLength
+    mov bx,[bp+4] ; move bx offset tail
+    mov si,[bp+6] ; move offset snakelength
     add bx,[si]
     add bx,[si] ; set bx to offset new head
     mov ax,[bx-2] ; move ax former head
@@ -144,10 +152,18 @@ proc appleeaten
         mov [bx-2],di
         sub bx,2
         loop swapforward
-    inc [si] ; increase snake length
+    inc [WORD PTR si] ; increase snake length
+    push [bp+8] ; push offset inside snake
+    push [bp+6] ; push offset snakelength
+    push [bp+10] ; push offset applepos
+    push [bp+4] ; push offset snake
     call apple ; generate another apple
-    mov si,offset insidesnake
-    cmp [si],1
+    pop dx
+    pop dx
+    pop dx
+    pop dx
+    mov si,[bp+8] ; move si offset insidesnake
+    cmp [WORD PTR si],1
     je isin
     poplabel:
         pop si
@@ -160,9 +176,9 @@ proc appleeaten
         ret
     isin:
     call apple
-    cmp [si],1
+    cmp [WORD PTR si],1
     je isin
-    mov [si],0
+    mov [WORD PTR si],0
     jmp poplabel
 endp appleeaten
 
@@ -202,15 +218,14 @@ proc drawbody
     push bx
     push di
     push si
-
-    mov si,offset snakeLength
+    mov si,[bp+6] ; move si offset snakelength
     mov ax,SNAKECOLOR ; snake design
     mov bx,[bp+4] ; move bx offset snake
     add bx,[si]
     add bx,[si]
     sub bx,2 ; move bx offset head
     mov di,[bx] ; move di head position
-    stosw ; place apostrophe
+    stosw
     pop si
     pop di
     pop bx
@@ -229,10 +244,10 @@ proc deletesnake
     push di
     push si
 
-    mov si,offset lengthen
-    cmp [si],1 ; check if need to lengthn
+    mov si,[bp+6] ; move si offset lengthen
+    cmp [BYTE PTR si],1 ; check if need to lengthn
     je exit5 ; if true dont delete last
-    mov si,offset snakeLength
+    mov si,[bp+8] ; move si offset snakeLength
     mov cx, [si] ; number of times to loop
     xor ax,ax ; snake design
     mov bx,[bp+4] ; move bx offset snake
@@ -255,7 +270,7 @@ proc moveup
     push ax
     push si
 
-    mov si,offset snakeLength
+    mov si,[bp+6]
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -278,7 +293,7 @@ proc movedown
     push ax
     push si
 
-    mov si,offset snakeLength
+    mov si,[bp+6]
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -302,7 +317,7 @@ proc moveleft
     push ax
     push si
 
-    mov si,offset snakeLength
+    mov si,[bp+6]
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -326,7 +341,7 @@ proc moveright
     push ax
     push si
 
-    mov si,offset snakeLength
+    mov si,[bp+6]
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -352,19 +367,19 @@ proc bordercontrol
     push ax
     push si
     push di
-    mov si,offset key
-    mov di,offset snakeLength
+    mov si,[bp+6] ; move si offset key
+    mov di,[bp+8] ; move di offset snakelength
     xor ax,ax
     xor dx,dx
     xor bx,bx
     ;; Check key and send to matching function
-    cmp [si],'w'
+    cmp [WORD PTR si],'w'
     je w
-    cmp [si],'s'
+    cmp [WORD PTR si],'s'
     je s
-    cmp [si],'d'
+    cmp [WORD PTR si],'d'
     je d
-    cmp [si],'a'
+    cmp [WORD PTR si],'a'
     je a
     ;; Functions check if head's next movement is outside of border
     d: ; divide by 160 and check if remainder is 158 (on border)
@@ -413,7 +428,7 @@ proc bordercontrol
         jmp exitprogram
     approve:
         mov di,offset canmove
-        mov [di],1
+        mov [BYTE PTR di],1
     exit1:
         pop di
         pop si
@@ -432,49 +447,49 @@ proc directioncontrol
     mov bp,sp
     push di
     push si
-    mov si,offset direction
-    mov di,offset key
+    mov di,[bp+8] ; move di, offset key
+    mov si,[bp+6] ; move di, offset direction
     ;; Check key and send to matching function
-    cmp [di],'w'
+    cmp [BYTE PTR di],'w'
     je dirup
-    cmp [di],'s'
+    cmp [BYTE PTR di],'s'
     je dirdown
-    cmp [di],'d'
+    cmp [BYTE PTR di],'d'
     je dirright
-    cmp [di],'a'
+    cmp [BYTE PTR di],'a'
     je dirleft
     ;; checks if current direction is opposite to new. If it is it changes the key back to previous and reverses direction
     dirup:
-        cmp [si], 2
+        cmp [BYTE PTR si], 2
         je disapprove1
         jmp approve2
         disapprove1:
-            mov [di],'s'
-            mov [si],2
+            mov [BYTE PTR di],'s'
+            mov [BYTE PTR si],2
             jmp exit2
     dirdown:
-        cmp [si], 1
+        cmp [BYTE PTR si], 1
         je disapprove2
         jmp approve2
         disapprove2:
-            mov [di],'w'
-            mov [si],1
+            mov [BYTE PTR di],'w'
+            mov [BYTE PTR si],1
             jmp exit2
     dirleft:
-        cmp [si], 4
+        cmp [BYTE PTR si], 4
         je disapprove3
         jmp approve2
         disapprove3:
-            mov [di],'d'
-            mov [si],4
+            mov [BYTE PTR di],'d'
+            mov [direction],4
             jmp exit2
     dirright:
-        cmp [si], 3
+        cmp [BYTE PTR si], 3
         je disapprove4
         jmp approve2
         disapprove4:
-            mov [di],'a'
-            mov [si],3
+            mov [BYTE PTR di],'a'
+            mov [direction],3
             jmp exit2
     approve2:
         jmp exit2
@@ -485,7 +500,6 @@ proc directioncontrol
         ret
 endp directioncontrol
 
-
 proc collideSelf
     push bp
     mov bp,sp
@@ -494,7 +508,7 @@ proc collideSelf
     push di
     push dx
     push si
-    mov si,[bp+6]
+    mov si,[bp+6] ; move si SnakeLength
     mov cx, [si]; loop snakelength times
     dec cx
     mov bx,[bp+4] ; move bx offset of head
@@ -547,7 +561,7 @@ proc applespawn
     ret
     insidesnake2:
         mov si,offset insidesnake
-        mov [si],1
+        mov [BYTE PTR si],1
         pop di
         pop dx
         pop bx
@@ -563,7 +577,7 @@ proc swap
     push bx
     push ax
     push di
-    mov di,offset snakeLength
+    mov di,[bp+6] ;move di offset snakeLength
     xor ax,ax
     mov ax,[di]
     add ax,[di]
@@ -594,15 +608,29 @@ proc MovementHandler
     push bp
     mov bp,sp
     push di
-    mov di,[bp+8]
+    mov di,[bp+8] ; move di canmove
     call delay ; calls delay
-    mov [di],0
+    mov [BYTE PTR di],0
+
+    push [bp+10] ; push offset key
     call getinput ; retrieves key pressed
+    pop dx
+
+    push [bp+6] ; push offset snakelength
+    push [bp+10] ; push offset key
     push [bp+4] ; pushes offset of snake
     call bordercontrol ;activates border-control
     pop dx
-    push [bp+4] ; pushes offset of snake
+    pop dx
+    pop dx
+
+    push [bp+10] ; pushes offset of key
+    push [bp+12] ; pushes offset of direction
+    push [bp+4]
     call directioncontrol ; activates direction control and checks you aren't trying to go in opposite direction
+    pop dx
+    pop dx
+
     pop di
     pop dx
     pop bp
@@ -612,13 +640,23 @@ endp MovementHandler
 proc AppleHandler
     push bp
     mov bp,sp
-    push [bp+4]
+    push [bp+10] ; push offset insidesnake
+    push [bp+8] ; push offset snakelength
+    push [bp+6] ; push offset applepos
+    push [bp+4] ; push offset snake
     call collision ; check if apple has collided with snake
+    pop dx
+    pop dx
+    pop dx
     pop dx
     pop bp
     ret
 endp AppleHandler
 
+proc win    
+    call clear
+    ret
+endp win
 start:
     mov ax, @data
     mov ds, ax
@@ -635,19 +673,27 @@ start:
     stosw
     mov di,2004 ; place third dot
     stosw
+    push offset snakelength
     push offset snake
     call drawbody ; draw snake
     pop dx
+    pop dx
+    push offset insidesnake
+    push offset snakeLength
+    push offset applepos
     push offset snake
     call apple  ; place apple
+    pop dx
+    pop dx
+    pop dx
     pop dx
     mov [key],'d'
     pop ax
     jmp main
-win:
-    call clear
 main:
     mov [lengthen],0
+
+    push offset direction
     push offset key
     push offset canmove
     push offset snakeLength
@@ -657,13 +703,25 @@ main:
     pop dx
     pop dx
     pop dx
+    pop dx
+    pop dx
+
+    push offset insidesnake
+    push offset snakeLength
+    push offset applepos
     push offset snake
     call AppleHandler ; handles apple
     pop dx
+    pop dx
+    pop dx
+    pop dx
+
     cmp [canmove],0 ; move if movement is legal
     je main
     cmp [snakeLength],2000
-    je win
+    jne check
+    won:
+        call win
     check: ; attach key to key-function
         mov al,[key]
         cmp al,'w'
@@ -673,47 +731,65 @@ main:
         cmp al,'a'
         je left
         cmp al,'d'
-        je right
+        je middle
     jmp main ; infinte loop
 
 up:
     ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],1
+    push offset lengthen
+    push offset snakeLength
     push offset snake
     call deletesnake
     call swap
     call moveup
     call drawbody
     pop dx
+    pop dx
+    pop dx
     jmp main
 down:
     ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],2
+    push offset lengthen
+    push offset snakeLength
     push offset snake
     call deletesnake
     call swap
     call movedown
     call drawbody
     pop dx
+    pop dx
+    pop dx
     jmp main
+middle:
+    jmp right
 left:
     ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],3
+    push offset lengthen
+    push offset snakeLength
     push offset snake
     call deletesnake
     call swap
     call moveleft
     call drawbody
     pop dx
+    pop dx
+    pop dx
     jmp main
 right:
     ; change direction to up, push offset of snake as a parameter and call moving functions
     mov [direction],4
+    push offset lengthen
+    push offset snakeLength
     push offset snake
     call deletesnake
     call swap
     call moveright
     call drawbody
+    pop dx
+    pop dx
     pop dx
     jmp main
 exit: ; exit the function
