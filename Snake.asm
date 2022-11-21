@@ -20,18 +20,19 @@ lengthen    db 0
 insidesnake db 0
 CODESEG
 
-proc endprogram
+proc endprogram ; exits program
     mov ax, 4c00h ; exit program
     int 21h
     ret
 endp endprogram
 
-proc getinput
+proc getinput ; retreives user input if exists and inserts into key memory
+    ;; Recieves key offset as parameter
     push bp
     mov bp,sp
     push ax
     push di
-    mov di,[bp+4]
+    mov di,[bp+4] ; move di offset key
     xor ax,ax
     mov ah,01 ; check if there is a keystroke
     int 16h
@@ -50,7 +51,8 @@ proc getinput
         ret
 endp getinput
 
-proc apple
+proc apple ; spawns apple using random function from 0-4000
+    ;; Recieves offset insidesnake, applepos 
     push bp
     mov bp,sp
     push ax
@@ -95,7 +97,8 @@ proc apple
     ret
 endp apple
 
-proc collision
+proc collision ; checks if there is collision between apple and head
+    ;; Recieves offset of applepos,tail and snakelength as parameters
     push bp
     mov bp,sp
     push ax
@@ -131,7 +134,8 @@ proc collision
     ret
 endp collision
 
-proc appleeaten
+proc appleeaten ; lengthens snake
+    ;; Recieves offset of tail, snakelength
     push bp
     mov bp,sp
     push ax
@@ -198,7 +202,7 @@ proc delay ; makes the snake move slower
     ret
 endp delay
 
-proc clear
+proc clear ; clear screen
     push bp
     mov bp,sp
     ;; clear the screen using a loop that incs di and clears [ES:DI]
@@ -210,7 +214,8 @@ proc clear
     ret
 endp clear
 
-proc drawbody
+proc drawbody ; draw head
+    ;; Recieves offset snakelength and snake as parameters
     push bp
     mov bp,sp
     push cx
@@ -235,7 +240,8 @@ proc drawbody
     ret
 endp drawbody
 
-proc deletesnake
+proc deletesnake ; delete tail
+    ;; Recieves offset snakelength, snake and lengthen as parameters
     push bp
     mov bp,sp
     push cx
@@ -263,14 +269,15 @@ proc deletesnake
     ret
 endp deletesnake
 
-proc moveup
+proc moveup ; move head by -160
+    ;; Recieves offset of snakelength and snake as parameters
     push bp
     mov bp,sp
     push bx
     push ax
     push si
 
-    mov si,[bp+6]
+    mov si,[bp+6] ; move si offset snakelength
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -286,14 +293,15 @@ proc moveup
     ret
 endp moveup
 
-proc movedown
+proc movedown  ; move head by 160
+    ;; Recieves offset of snake and snakelength
     push bp
     mov bp,sp
     push bx
     push ax
     push si
 
-    mov si,[bp+6]
+    mov si,[bp+6] ; move si offset snakelength
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -310,14 +318,14 @@ proc movedown
     ret
 endp movedown
 
-proc moveleft
+proc moveleft  ; move head by -1
     push bp
     mov bp,sp
     push bx
     push ax
     push si
 
-    mov si,[bp+6]
+    mov si,[bp+6] ; move si offset snakelength
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -334,14 +342,14 @@ proc moveleft
     ret
 endp moveleft
 
-proc moveright
+proc moveright  ; move head by 1
     push bp
     mov bp,sp
     push bx
     push ax
     push si
 
-    mov si,[bp+6]
+    mov si,[bp+6] ; move si offset snakelength
     mov bx,[bp+4] ; offset snake + offset of head
     add bx,[si]
     add bx,[si]
@@ -358,8 +366,8 @@ proc moveright
     ret
 endp moveright
 
-proc bordercontrol
-    ;; function gets snake offset as parameter
+proc bordercontrol ; checks if the snake is colliding with border
+    ;; function gets snake offset,key,snakelength as parameters
     push bp
     mov bp,sp
     push dx
@@ -442,7 +450,8 @@ proc bordercontrol
         int 21h
 endp bordercontrol
 
-proc directioncontrol
+proc directioncontrol ; controls that the snake doesn't go in opposite direction illegaly
+    ;; function gets snake offset,key,direction as parameters
     push bp
     mov bp,sp
     push di
@@ -500,7 +509,8 @@ proc directioncontrol
         ret
 endp directioncontrol
 
-proc collideSelf
+proc collideSelf ; checks if snake collides with itself
+    ;; Recieves offset snakelength, snake, tail
     push bp
     mov bp,sp
     push cx
@@ -534,7 +544,8 @@ proc collideSelf
         int 21h
 endp collideSelf
 
-proc applespawn
+proc applespawn ; checks if apple spawned on itself
+    ;; receives snakelength,snake as parameters
     push bp
     mov bp,sp
     push cx
@@ -570,7 +581,8 @@ proc applespawn
         ret
 endp applespawn
 
-proc swap
+proc swap ; take every element one back
+    ;; recieves offset snakelength,snake as parameters
     push bp
     mov bp,sp
     push di
@@ -604,7 +616,8 @@ proc swap
     ret
 endp swap
 
-proc MovementHandler
+proc MovementHandler ; Handles all movement functions
+    ; recieves snake,canmove,snakelength,key as parameters
     push bp
     mov bp,sp
     push di
@@ -637,7 +650,8 @@ proc MovementHandler
     ret
 endp MovementHandler
 
-proc AppleHandler
+proc AppleHandler ; Handles all apple functions
+    ; recieves insidesnake, snakelength, applepos, snake as parameters
     push bp
     mov bp,sp
     push [bp+10] ; push offset insidesnake
@@ -653,7 +667,7 @@ proc AppleHandler
     ret
 endp AppleHandler
 
-proc win    
+proc win ; if the player wins  
     call clear
     ret
 endp win
@@ -678,6 +692,7 @@ start:
     call drawbody ; draw snake
     pop dx
     pop dx
+    ;; PUSH ALL APPLE PARAMETERS
     push offset insidesnake
     push offset snakeLength
     push offset applepos
@@ -687,12 +702,12 @@ start:
     pop dx
     pop dx
     pop dx
-    mov [key],'d'
+    mov [key],'d' ; move starting key to d
     pop ax
     jmp main
 main:
     mov [lengthen],0
-
+    ;; PUSH ALL MOVEMENT HANDLER PARAMETERS
     push offset direction
     push offset key
     push offset canmove
@@ -706,6 +721,7 @@ main:
     pop dx
     pop dx
 
+    ;: PUSH ALL APPLEHANDLER
     push offset insidesnake
     push offset snakeLength
     push offset applepos
